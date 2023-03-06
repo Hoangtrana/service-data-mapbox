@@ -1,6 +1,5 @@
-# First look
 
-![Mabox service](./src/assets/appScreenshot262.png)
+
 
 # Getting Started with Create React App
 
