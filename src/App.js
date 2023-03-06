@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import ReactMapGL, { Marker, Popup } from "react-map-gl";
-import * as servicePoint from "./data/service-data.json";
+import * as servicePoint from "./data/serviceData.json";
 import './index.css';
 import Footer from "./Footer";
 
