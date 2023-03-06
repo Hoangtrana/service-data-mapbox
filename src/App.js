@@ -1,22 +1,33 @@
-import "./App.css";
-import "mapbox-gl/dist/mapbox-gl.css";
-import servicedata from "./servicedata.json";
-import Map, {
-  Marker,
-  NavigationControl,
-  Popup,
-  FullscreenControl,
-  GeolocateControl,
-} from "react-map-gl";
-import { useState, useEffect } from "react";
-function App() {
-  const [lng, setLng] = useState(59.053714);
-  const [lat, setLat] = useState(43.110968);
-  const [selectedPoint, setSelectedPoint] = useState(null);
+import React, { useState, useEffect } from "react";
+import ReactMapGL, { Marker, Popup } from "react-map-gl";
+import * as servicePoint from "./data/service-data.json";
+import './index.css';
+import Footer from "./Footer";
+
+
+export default function App() {
+
+  // Set viewport for Mapbox with equirectangular view
+  const [viewport, setViewport] = useState({
+    latitude: 48.4211,
+    longitude: 45.4211,
+    width: "100vw",
+    height: "60vh",
+    zoom: 1.0,
+          center:[0,1],
+          projection:{
+            name:"equirectangular",
+            center:[0,30],
+            parallels:[30,30],
+          },
+  });
+  const [selectedpoint, setSelectedpoint] = useState(null);
+
+//click service data, show up info and close automatially when click another 
   useEffect(() => {
     const listener = e => {
       if (e.key === "Escape") {
-        setSelectedPoint(null);
+        setSelectedpoint(null);
       }
     };
     window.addEventListener("keydown", listener);
@@ -25,50 +36,89 @@ function App() {
       window.removeEventListener("keydown", listener);
     };
   }, []);
+
+  //Conditional pulse style for different serice data state
+  const pulseStyles = {
+    okPulse:{
+      background : "linear-gradient(#46e24e, #8dcca2)",
+    },
+    alarmPulse:{
+      background: "linear-gradient(#ffc300, #fdca40)",
+    },
+    failurePulse:{
+      background: "linear-gradient(#d20000, #9c0000)",
+    }
+  };
+
   return (
-    <div className="banner--mapbox">
-
-      <h1 className="animate-charcter" id="service--data">SERVICE DATA</h1>
-      <Map
-        mapboxAccessToken="pk.eyJ1IjoiaG9hbmd0cmFuODgiLCJhIjoiY2xlaGh4OHBrMGZuMDNvbXd0d3d6ZThkZCJ9.JTkjWlKdQaxjrBGgzP0o4A"
-        style={{
-          width: "2000px",
-          height: "500px",
-          borderRadius: "0px",
-          
+    <div className="mapApp">
+     <div className="header figure">
+      <h1 className="animate-charcter">Service Data</h1>
+     </div>
+     
+      <div className="mapContainer">
+        <ReactMapGL
+        {...viewport}
+        mapboxApiAccessToken={process.env.REACT_APP_MYMAP_TOKEN}
+        mapStyle="mapbox://styles/mapbox/dark-v11"
+        onViewportChange={viewport => {
+          setViewport(viewport);
         }}
-        initialViewState={{
-          longitude: lng,
-          latitude: lat,
-        }}
-        mapStyle="mapbox://styles/mapbox/light-v11"
       >
-
-
-<Marker longitude={-119.417931} latitude={36.778259}/>
-
-
-<Marker longitude={139.839478} latitude={35.652832} />
-<Marker longitude={53,350140} latitude={-6.266155} />
-        <NavigationControl position="bottom-right" />
-        <FullscreenControl />
-
-        <GeolocateControl />
-      </Map>
-      {servicedata.features.map(point=>(
-          <div className="service--info">
-            
-        {point.properties.name}<span>&ensp;</span>
-         
-         {point.properties.state} <span>&ensp;</span>
-         {point.properties.updated} <span>&ensp;</span>
-         {point.properties.aws_region}</div>
-          
-           
-          
+        {servicePoint.features.map(point => (
+          <Marker
+            key={point.properties.SERVICE_ID}
+            latitude={point.geometry.coordinates[1]}
+            longitude={point.geometry.coordinates[0]}
+          >
+            <button
+              className="marker-btn"
+              onClick={e => {
+                e.preventDefault();
+                setSelectedpoint(point);
+              }}
+            >
+              {<div className="pulse" 
+              style = {
+                point.properties.STATE === "ALARM" ? pulseStyles.alarmPulse : (point.properties.STATE === "FAILURE" ? pulseStyles.failurePulse: pulseStyles.okPulse)}>
+              </div>
+            }
+              
+            </button>
+          </Marker>
         ))}
+
+        {selectedpoint ? (
+          <Popup
+            latitude={selectedpoint.geometry.coordinates[1]}
+            longitude={selectedpoint.geometry.coordinates[0]}
+            onClose={() => {
+              setSelectedpoint(null);
+            }}
+          >
+            <div>
+              <h3>{selectedpoint.properties.NAME}</h3>
+              <p>{selectedpoint.properties.UPDATED}</p>
+              <p>{selectedpoint.properties.AWS_REGION}</p>
+            </div>
+          </Popup>
+        ) : null}
+      </ReactMapGL>
     </div>
+    
+    <div className="figure">
+     
+     <div className="figure-dot" style= {pulseStyles.okPulse}></div> 
+     <p>Ok</p> &emsp;
+     <div className="figure-dot" style= {pulseStyles.alarmPulse}></div> 
+     <p>Alarm</p>&emsp;
+     <div className="figure-dot" style= {pulseStyles.failurePulse}></div> 
+     <p>Failure</p>
+    
+    </div>
+    <Footer/>
+
+  </div>
+    
   );
 }
-
-export default App;
